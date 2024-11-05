@@ -6,8 +6,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
+
+func newID() uuid.UUID {
+	id, _ := uuid.NewV7()
+
+	return id
+}
 
 func TestScheduler_Add(t *testing.T) {
 	errCh := make(chan error)
@@ -52,7 +59,7 @@ func TestScheduler_Register(t *testing.T) {
 	}))
 }
 
-func TestScheduler_doRetry(t *testing.T) {
+func TestScheduler_handleRetry(t *testing.T) {
 	errCh := make(chan error)
 	store := NewMemoryStore()
 	store.SetErrorTaskCnt(1)
@@ -97,7 +104,7 @@ func TestScheduler_doRetry(t *testing.T) {
 	scheduler.taskCh <- testTask
 
 	scheduler.wg.Add(1)
-	go scheduler.do()
+	go scheduler.handle()
 	close(scheduler.taskCh)
 	scheduler.Wait()
 
@@ -116,7 +123,7 @@ func TestScheduler_doRetry(t *testing.T) {
 	assert.True(t, time.Now().Before(todoTasks[0].RetryOn))
 }
 
-func TestScheduler_doDone(t *testing.T) {
+func TestScheduler_handleDone(t *testing.T) {
 	errCh := make(chan error)
 	store := NewMemoryStore()
 	store.SetErrorTaskCnt(1)
@@ -159,7 +166,7 @@ func TestScheduler_doDone(t *testing.T) {
 	scheduler.taskCh <- testTask
 
 	scheduler.wg.Add(1)
-	go scheduler.do()
+	go scheduler.handle()
 	close(scheduler.taskCh)
 	scheduler.Wait()
 
@@ -178,7 +185,7 @@ func TestScheduler_doDone(t *testing.T) {
 	assert.Equal(t, testTask.RetryOn, doneTasks[0].RetryOn)
 }
 
-func TestScheduler_doError(t *testing.T) {
+func TestScheduler_handleError(t *testing.T) {
 	errCh := make(chan error)
 	store := NewMemoryStore()
 	store.SetErrorTaskCnt(1)
@@ -223,7 +230,7 @@ func TestScheduler_doError(t *testing.T) {
 	scheduler.taskCh <- testTask
 
 	scheduler.wg.Add(1)
-	go scheduler.do()
+	go scheduler.handle()
 	close(scheduler.taskCh)
 	scheduler.Wait()
 

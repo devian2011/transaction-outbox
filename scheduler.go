@@ -6,22 +6,12 @@ import (
 	"fmt"
 	"sync"
 	"time"
-
-	"github.com/google/uuid"
 )
-
-func newID() uuid.UUID {
-	id, _ := uuid.NewV7()
-
-	return id
-}
 
 var (
 	ErrHandlerAlreadyExists      = errors.New("handler for task already exists")
 	ErrHandlerForTaskIsNotExists = errors.New("errors for task is not exists")
 	ErrConfiguration             = errors.New("configuration err")
-
-	ErrMaxRetryCntReached = errors.New("max retry count reached")
 )
 
 type HandleFn func(data []byte) error
@@ -85,7 +75,7 @@ func (s *Scheduler) Add(task Task) error {
 func (s *Scheduler) Run() {
 	for c := uint8(0); c < s.threadCnt; c++ {
 		s.wg.Add(1)
-		go s.do()
+		go s.handle()
 	}
 
 	go s.extract()
@@ -114,7 +104,7 @@ loop:
 	close(s.taskCh)
 }
 
-func (s *Scheduler) do() {
+func (s *Scheduler) handle() {
 	for v := range s.taskCh {
 		if h, exists := s.handlers[v.Code]; exists {
 			result := h.Handle(v.Data)
